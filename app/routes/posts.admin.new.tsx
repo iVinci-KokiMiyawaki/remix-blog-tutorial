@@ -1,5 +1,5 @@
 import type { ActionArgs } from "@remix-run/node";
-import { redirect } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import { Form } from "@remix-run/react";
 
 import { createPost } from "~/models/post.server";
@@ -11,7 +11,23 @@ export const action = async ({ request }: ActionArgs) => {
   const slug = formData.get("slug");
   const markdown = formData.get("markdown");
 
-  await createPost({ title, slug, markdown });
+  const errors = {
+    title: title ? null : "Title is required",
+    slug: slug ? null : "Slug is required",
+    markdown: markdown ? null : "Markdown is required",
+  };
+  const hasErrors = Object.values(errors).some(
+    (errorMessage) => errorMessage
+  );
+  if (hasErrors) {
+    return json(errors);
+  }
+
+  await createPost({
+    title: title as string,
+    slug: slug as string,
+    markdown: markdown as string,
+  });
 
   return redirect("/posts/admin");
 };

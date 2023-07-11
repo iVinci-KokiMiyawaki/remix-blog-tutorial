@@ -3,7 +3,7 @@ import { json, redirect } from "@remix-run/node";
 import { Form, useActionData, useNavigation, useLoaderData } from "@remix-run/react";
 import invariant from "tiny-invariant";
 
-import { createPost, getPost, updatePost } from "~/models/post.server";
+import { createPost, deletePost, getPost, updatePost } from "~/models/post.server";
 
 export const loader: LoaderFunction =async ({ request, params }) => {
   invariant(params.slug, "params.slug is required");
@@ -18,6 +18,12 @@ export const action = async ({ request, params }: ActionArgs) => {
   // TODO: remove me
   await new Promise((res) => setTimeout(res, 1000));
   const formData = await request.formData();
+  const intent = formData.get('intent')
+
+  if (intent === 'delete') {
+    await deletePost(params.slug);
+    return redirect("/posts/admin")
+  }
 
   const title = formData.get("title");
   const slug = formData.get("slug");
@@ -66,6 +72,7 @@ export default function NewPost() {
   const navigation = useNavigation();
   const isCreating = navigation.formData?.get('intent') === 'create';
   const isUpdating = navigation.formData?.get('intent') === 'update';
+  const isDeleting = navigation.formData?.get('intent') === 'delete';
   const isNewPost = !data.post;
 
   return (
@@ -117,6 +124,17 @@ export default function NewPost() {
         />
       </p>
       <p className="text-right">
+        {isNewPost ? null :
+          <button
+            type="submit"
+            name="intent"
+            value='delete'
+            className="rounded bg-red-500 py-2 px-4 mr-2 text-white hover:bg-red-600 focus:bg-red-400 disabled:bg-red-300"
+            disabled={isDeleting}
+          >
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </button>
+        }
         <button
           type="submit"
           name="intent"
@@ -127,6 +145,7 @@ export default function NewPost() {
           {isNewPost ? (isCreating ? "Creating..." : "Create Post") : null }
           {isNewPost ? null : isUpdating ? 'Updating...' : 'Update'}
         </button>
+
       </p>
     </Form>
   );
